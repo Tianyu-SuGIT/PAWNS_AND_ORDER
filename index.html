@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Horse race?</title>
+    <title>PAWNS</title>
     <style>
         :root { --c-blue: #007bff; --c-green: #28a745; --c-red: #d9534f; --c-light-gray: #f8f9fa; --c-white: #fff; --c-text: #333; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f4f4f9; color: var(--c-text); font-size: 16px; }
@@ -57,7 +57,7 @@
 
     <div id="lobby-view">
         <div class="container">
-            <h1>Horse race?</h1>
+            <h1>PAWNS</h1>
             <h2>Lobby</h2>
             <div id="join-form">
                 <input type="text" id="username-input" placeholder="Inserisci il tuo nome...">
@@ -70,7 +70,7 @@
 
             <div id="game-rules" class="card" style="margin-top: 20px; text-align: left;">
                 <h3>Regole del Gioco</h3>
-                <p>Benvenuto! L'obiettivo è accumulare più punti degli altri in 5 round, ma non sarà semplice. Ogni tua scelta sarà un dilemma strategico.</p>
+                <p>Benvenuto a PAWNS! L'obiettivo è accumulare più punti degli altri in 5 round, ma non sarà semplice. Ogni tua scelta sarà un dilemma strategico.</p>
                 
                 <h4>Obiettivi del Round</h4>
                 <p>Ogni round riceverai due tipi di obiettivi:</p>
@@ -140,7 +140,7 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const socket = io("INCOLLA_QUI_L'URL_DEL_TUO_BACKEND");
+            const socket = io("https://horse-race-irrb.onrender.com");
             
             let mySid = '';
             let myUsername = '';
