@@ -65,6 +65,32 @@
             <h3>Giocatori Connessi:</h3>
             <ul id="player-list"></ul>
             <p id="lobby-status">Connessione al server...</p>
+
+            <div id="game-rules" class="card" style="margin-top: 20px; text-align: left;">
+                <h3>Regole del Gioco</h3>
+                <p>Benvenuto a Horse Race! L'obiettivo è accumulare più punti degli altri giocatori.</p>
+                <ul>
+                    <li><strong>Giocatori:</strong> Da 4 a 6 giocatori.</li>
+                    <li><strong>Round:</strong> Il gioco dura 5 round.</li>
+                    <li><strong>Mappa:</strong> Ogni round, scegli una casella sulla mappa di 12 caselle.</li>
+                    <li><strong>Obiettivi:</strong> Ogni round avrai 3 tipi di obiettivi:
+                        <ul>
+                            <li><strong>Personale:</strong> Un obiettivo segreto solo per te.</li>
+                            <li><strong>Comune:</strong> Un obiettivo visibile a tutti.</li>
+                            <li><strong>Relazionale:</strong> Un obiettivo che riguarda la tua posizione rispetto a un altro giocatore.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Punti:</strong>
+                        <ul>
+                            <li>Obiettivo Personale: +5 punti</li>
+                            <li>Obiettivo Comune: +2 punti</li>
+                            <li>Obiettivo Relazionale: +3 punti</li>
+                        </ul>
+                    </li>
+                    <li><strong>Timer:</strong> Ogni round ha un timer di 120 secondi. Se tutti i giocatori confermano la loro scelta prima dello scadere del tempo, il round termina immediatamente.</li>
+                    <li><strong>Vincitore:</strong> Il giocatore con il punteggio più alto alla fine di tutti i round vince!</li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -78,7 +104,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // =======================================================================
-            // == MODIFICA FONDAMENTALE: INSERISCI QUI L'URL DEL TUO BACKEND RENDER ==
+            // == RICORDA DI INSERIRE QUI L'URL DEL TUO BACKEND RENDER              ==
             // =======================================================================
             const socket = io("INCOLLA_QUI_L'URL_DEL_TUO_BACKEND");
             
@@ -89,16 +115,11 @@
             const lobbyView = document.getElementById('lobby-view');
             const gameView = document.getElementById('game-view');
             const gameOverView = document.getElementById('game-over-view');
-            const confirmChoiceBtn = document.getElementById('confirm-choice-btn');
 
             function showView(viewName) {
                 [lobbyView, gameView, gameOverView].forEach(v => v.classList.add('hidden'));
                 document.getElementById(`${viewName}-view`).classList.remove('hidden');
             }
-
-            function setupNewRound(data) { /* ... questa funzione rimane invariata ... */ }
-            function updateLeaderboard(scores) { /* ... questa funzione rimane invariata ... */ }
-            function setupChat(players) { /* ... questa funzione rimane invariata ... */ }
             
             // --- GESTIONE SOCKET ---
             socket.on('connect', () => { mySid = socket.id; });
@@ -141,13 +162,16 @@
             });
 
             socket.on('game_starting', () => { document.getElementById('lobby-status').textContent = 'Partita in avvio...'; });
+            
             socket.on('error', (data) => { 
-                alert("Errore: " + data.msg); 
+                alert("Errore: " + data.msg);
                 document.getElementById('join-form').classList.remove('hidden');
                 document.getElementById('lobby-status').textContent = 'Errore. Riprova.';
+                 // Ricarica la lista dei giocatori corretta in caso di errore di username
+                socket.emit('get_current_players');
             });
-
-            // ... tutti gli altri gestori di eventi ('new_round', 'timer_update', etc.) rimangono invariati ...
+            
+            // ... (il resto degli handler socket, come new_round, timer_update, ecc. va qui)
 
             const usernameInput = document.getElementById('username-input');
             const joinBtn = document.getElementById('join-btn');
@@ -156,11 +180,10 @@
                 const username = usernameInput.value;
                 const playerList = document.getElementById('player-list');
                 
-                // Optimistic UI Update
                 const tempLi = document.createElement('li');
                 tempLi.textContent = username || 'Giocatore...';
                 tempLi.style.color = '#555';
-                playerList.appendChild(tempLi);
+                // Non aggiungerlo più ottimisticamente, attendiamo la risposta per evitare duplicati visivi in caso di errore
                 
                 socket.emit('join', { username: username });
                 document.getElementById('join-form').classList.add('hidden');
