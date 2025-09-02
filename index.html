@@ -52,7 +52,6 @@
     </style>
 </head>
 <body>
-
     <div id="lobby-view">
         <div class="container">
             <h1>Horse race?</h1>
@@ -65,21 +64,8 @@
             <h3>Giocatori Connessi:</h3>
             <ul id="player-list"></ul>
             <p id="lobby-status">Connessione al server...</p>
-            <div id="game-rules" class="card" style="margin-top: 20px; text-align: left;">
-                <h3>Regole del Gioco</h3>
-                <p>Benvenuto a Horse Race! L'obiettivo è accumulare più punti degli altri giocatori.</p>
-                <ul>
-                    <li><strong>Giocatori:</strong> Da 4 a 6 giocatori.</li>
-                    <li><strong>Round:</strong> Il gioco dura 5 round.</li>
-                    <li><strong>Mappa:</strong> Ogni round, scegli una casella sulla mappa di 12 caselle.</li>
-                    <li><strong>Punti:</strong> Personale (+5), Comune (+2), Relazionale (+3).</li>
-                    <li><strong>Timer:</strong> Ogni round ha un timer di 120 secondi.</li>
-                    <li><strong>Vincitore:</strong> Il giocatore con il punteggio più alto vince!</li>
-                </ul>
-            </div>
         </div>
     </div>
-
     <div id="game-view" class="hidden">
         <header class="game-header card">
             <div id="timer">--:--</div>
@@ -95,10 +81,9 @@
             <button id="confirm-choice-btn" disabled>Conferma Scelta</button>
             <div id="objectives-container" class="card">
                 <h3>I Tuoi Obiettivi</h3>
-                <div class="objective"><strong>Personale:</strong> <span id="my-personal-objective"></span></div>
-                <div class="objective"><strong>Relazionale:</strong> <span id="my-relational-objective"></span></div>
+                <div class="objective"><strong>Personale (Segreto):</strong> <span id="my-personal-objective"></span></div>
                 <hr>
-                <h3>Obiettivi Altrui</h3>
+                <h3>Altri Giocatori</h3>
                 <div id="other-objectives-list"></div>
             </div>
         </main>
@@ -111,7 +96,6 @@
             </div>
         </aside>
     </div>
-
     <div id="game-over-view" class="hidden">
         <div class="container">
             <h2>Partita Terminata!</h2>
@@ -120,41 +104,30 @@
             <p id="restarting-status">La lobby si riavvierà a breve...</p>
         </div>
     </div>
-
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const socket = io("https://horse-race-irrb.onrender.com");
-            
             let mySid = '';
             let myUsername = '';
             let playersData = {};
             let selectedSquare = null;
-
             const lobbyView = document.getElementById('lobby-view');
             const gameView = document.getElementById('game-view');
             const gameOverView = document.getElementById('game-over-view');
             const confirmChoiceBtn = document.getElementById('confirm-choice-btn');
-
             function showView(viewName) {
                 [lobbyView, gameView, gameOverView].forEach(v => v.classList.add('hidden'));
                 document.getElementById(`${viewName}-view`).classList.remove('hidden');
             }
-            
-            // ===================================================================
-            // QUESTA SEZIONE ERA MANCANTE O INCOMPLETA. ORA È CORRETTA.
-            // ===================================================================
             function setupNewRound(data) {
                 showView('game');
                 playersData = data.players;
                 selectedSquare = null;
-
                 document.getElementById('round-info').textContent = `Round ${data.round_attuale} / ${data.num_round_totali}`;
                 document.getElementById('common-objective').querySelector('span').textContent = data.obiettivo_comune_desc;
-
                 confirmChoiceBtn.disabled = true;
                 confirmChoiceBtn.textContent = 'Conferma Scelta';
-                
                 const mapContainer = document.querySelector('.map-container');
                 mapContainer.innerHTML = '';
                 for (let i = 1; i <= 12; i++) {
@@ -170,31 +143,26 @@
                     });
                     mapContainer.appendChild(square);
                 }
-
-                document.getElementById('my-personal-objective').textContent = data.obiettivi[mySid].personale_desc;
-                document.getElementById('my-relational-objective').textContent = data.obiettivi[mySid].relazionale_desc;
-                
+                // --- NUOVA LOGICA PER MOSTRARE GLI OBIETTIVI ---
+                document.getElementById('my-personal-objective').textContent = data.obiettivi_personali[mySid].desc;
                 const otherObjectivesList = document.getElementById('other-objectives-list');
                 otherObjectivesList.innerHTML = '';
                 for (const sid in playersData) {
                     if (sid === mySid) continue;
                     const p = playersData[sid];
                     const div = document.createElement('div');
-                    div.innerHTML = `<strong>${p.username}:</strong> Obiettivo Personale Nascosto | ${data.obiettivi[sid].relazionale_desc}`;
+                    div.innerHTML = `<strong>${p.username}:</strong> Obiettivo Personale Segreto`;
                     otherObjectivesList.appendChild(div);
                 }
-
                 updateLeaderboard(data.punteggi);
                 setupChat(playersData);
             }
-
             function updateLeaderboard(scores) {
                 const leaderboardList = document.getElementById('leaderboard-list');
                 leaderboardList.innerHTML = '';
-                const sortedPlayers = Object.entries(playersData)
-                    .sort(([, a], [, b]) => (scores[b.id] || 0) - (scores[a.id] || 0));
+                const sortedPlayers = Object.values(playersData).sort((a, b) => (scores[b.id] || 0) - (scores[a.id] || 0));
                 
-                sortedPlayers.forEach(([sid, player]) => {
+                sortedPlayers.forEach(player => {
                     const score = scores[player.id] || 0;
                     const li = document.createElement('li');
                     li.id = `score-${player.id}`;
@@ -202,13 +170,11 @@
                     leaderboardList.appendChild(li);
                 });
             }
-
             function setupChat(players) {
                 const chatTabs = document.getElementById('chat-tabs');
                 const chatWindows = document.getElementById('chat-windows');
                 chatTabs.innerHTML = '<div class="chat-tab active" data-chat="global">Globale</div>';
                 chatWindows.innerHTML = '<div class="chat-window" id="chat-window-global"></div>';
-
                 for(const sid in players) {
                     if(sid === mySid) continue;
                     const p = players[sid];
@@ -217,13 +183,11 @@
                     tab.dataset.chat = sid;
                     tab.textContent = p.username;
                     chatTabs.appendChild(tab);
-
                     const windowEl = document.createElement('div');
                     windowEl.className = 'chat-window hidden';
                     windowEl.id = `chat-window-${sid}`;
                     chatWindows.appendChild(windowEl);
                 }
-
                 chatTabs.addEventListener('click', e => {
                     if (!e.target.classList.contains('chat-tab')) return;
                     const targetChat = e.target.dataset.chat;
@@ -233,10 +197,7 @@
                     document.getElementById(`chat-window-${targetChat}`).classList.remove('hidden');
                 });
             }
-            // ===================================================================
-
             socket.on('connect', () => { mySid = socket.id; });
-            
             socket.on('welcome', (data) => {
                 const playerList = document.getElementById('player-list');
                 playerList.innerHTML = '';
@@ -247,37 +208,40 @@
                 });
                 document.getElementById('lobby-status').textContent = `Giocatori connessi: ${data.all_players.length}`;
             });
-
-            socket.on('player_joined', (data) => { /* ... (invariato) ... */ });
-            socket.on('player_left', (data) => { /* ... (invariato) ... */ });
+            socket.on('player_joined', (data) => {
+                const playerList = document.getElementById('player-list');
+                const li = document.createElement('li');
+                li.textContent = data.new_player_name;
+                playerList.appendChild(li);
+                const currentCount = document.querySelectorAll('#player-list li').length;
+                document.getElementById('lobby-status').textContent = `Giocatori connessi: ${currentCount}`;
+            });
+            socket.on('player_left', (data) => {
+                 const playerList = document.getElementById('player-list');
+                 playerList.querySelectorAll('li').forEach(li => {
+                     if (li.textContent === data.username) li.remove();
+                 });
+                 const currentCount = document.querySelectorAll('#player-list li').length;
+                 document.getElementById('lobby-status').textContent = `Giocatori connessi: ${currentCount}`;
+            });
             socket.on('game_starting', () => { document.getElementById('lobby-status').textContent = 'Partita in avvio...'; });
-            
             socket.on('error', (data) => { 
                 alert("Errore: " + data.msg);
                 const playerList = document.getElementById('player-list');
-                playerList.querySelectorAll('li').forEach(li => {
-                    if (li.textContent === myUsername) li.remove();
-                });
+                playerList.querySelectorAll('li').forEach(li => { if (li.textContent === myUsername) li.remove(); });
                 document.getElementById('join-form').classList.remove('hidden');
                 document.getElementById('lobby-status').textContent = 'Errore. Riprova.';
             });
-            
-            // ===================================================================
-            // EVENTO CHIAVE MANCANTE: Ora il frontend sa cosa fare quando riceve 'new_round'
-            // ===================================================================
             socket.on('new_round', setupNewRound);
-            
             socket.on('timer_update', (data) => {
                 const timerEl = document.getElementById('timer');
                 if (timerEl) timerEl.textContent = new Date(data.time * 1000).toISOString().substr(14, 5);
             });
-            
             socket.on('choice_confirmed', () => { 
                 document.querySelector('.map-square.selected')?.classList.add('confirmed');
                 confirmChoiceBtn.disabled = true;
                 confirmChoiceBtn.textContent = 'Scelta Inviata';
             });
-
             socket.on('round_reveal', (data) => {
                 document.querySelectorAll('.map-square').forEach(s => s.style.pointerEvents = 'none');
                 for(const playerId in data.choices) {
@@ -297,7 +261,6 @@
                     });
                 }, 1000);
             });
-
             socket.on('game_over', (data) => {
                 showView('game-over');
                 const finalLeaderboard = document.getElementById('final-leaderboard');
@@ -308,13 +271,17 @@
                     finalLeaderboard.appendChild(li);
                 });
             });
-
             socket.on('lobby_reset', () => { location.reload(); });
-            socket.on('new_message', (data) => { /* ... (invariato) ... */ });
-
+            socket.on('new_message', (data) => {
+                const targetId = data.to === 'global' ? 'global' : (data.sender_sid === mySid ? data.to : data.sender_sid);
+                const win = document.getElementById(`chat-window-${targetId}`);
+                if (win) {
+                    win.innerHTML += `<p><strong>${data.sender}:</strong> ${data.message}</p>`;
+                    win.scrollTop = win.scrollHeight;
+                }
+            });
             const usernameInput = document.getElementById('username-input');
             const joinBtn = document.getElementById('join-btn');
-
             function joinGame() {
                 myUsername = usernameInput.value.trim() || `Giocatore${Math.floor(Math.random() * 100)}`;
                 const playerList = document.getElementById('player-list');
@@ -326,25 +293,26 @@
                 document.getElementById('lobby-status').textContent = 'Connessione in corso...';
                 socket.emit('join', { username: myUsername });
             }
-
             joinBtn.addEventListener('click', joinGame);
-            usernameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') { joinGame(); }
-            });
-            
+            usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { joinGame(); } });
             if(confirmChoiceBtn) {
                 confirmChoiceBtn.addEventListener('click', () => {
-                    if (selectedSquare !== null) {
-                        socket.emit('make_choice', { choice: selectedSquare });
+                    if (selectedSquare !== null) socket.emit('make_choice', { choice: selectedSquare });
+                });
+            }
+            const sendChatBtn = document.getElementById('send-chat-btn');
+            if(sendChatBtn) {
+                sendChatBtn.addEventListener('click', () => {
+                    const input = document.getElementById('chat-message-input');
+                    const message = input.value.trim();
+                    const activeTab = document.querySelector('.chat-tab.active');
+                    if (message && activeTab) {
+                        const targetSid = activeTab.dataset.chat;
+                        socket.emit('send_message', { message: message, to: targetSid });
+                        input.value = '';
                     }
                 });
             }
-            
-            const sendChatBtn = document.getElementById('send-chat-btn');
-            if(sendChatBtn) {
-                sendChatBtn.addEventListener('click', () => { /* ... (invariato) ... */ });
-            }
-
             showView('lobby');
         });
     </script>
