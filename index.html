@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Horse race?</title>
+    <style>
+        :root { --c-blue: #007bff; --c-green: #28a745; --c-red: #d9534f; --c-light-gray: #f8f9fa; --c-white: #fff; --c-text: #333; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f4f4f9; color: var(--c-text); font-size: 16px; }
+        .hidden { display: none !important; }
+        .card { background: var(--c-white); padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        button { padding: 10px 20px; border: none; border-radius: 4px; background-color: var(--c-blue); color: white; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #lobby-view, #game-over-view { text-align: center; padding-top: 50px; }
+        .container { background-color: var(--c-white); margin: auto; padding: 20px 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; }
+        #player-list { list-style-type: none; padding: 0; }
+        #player-list li { background-color: #e7f3ff; margin: 5px 0; padding: 10px; border-radius: 4px; }
+        #lobby-view input[type="text"] { padding: 10px; width: 60%; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        #lobby-status { margin-top: 20px; font-weight: bold; min-height: 20px; color: var(--c-blue); }
+        #game-view { display: grid; grid-template-columns: 280px 1fr 320px; grid-template-rows: auto 1fr; gap: 20px; padding: 20px; max-width: 1500px; margin: auto; height: 95vh; }
+        .game-header { grid-column: 1 / -1; text-align: center; }
+        .leaderboard { grid-column: 1; grid-row: 2; }
+        .main-game { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; text-align: center; }
+        .chat-area { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; }
+        #timer { font-size: 1.8em; font-weight: bold; color: var(--c-red); }
+        #round-info { font-size: 1.2em; }
+        #leaderboard-list { list-style: none; padding: 0; }
+        #leaderboard-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; transition: background-color 0.3s; }
+        #leaderboard-list li.score-update { background-color: #fffbe6; }
+        .player-id-color { padding: 2px 6px; border-radius: 4px; color: white; margin-right: 8px; }
+        .map-container { display: flex; justify-content: center; align-items: center; padding: 20px; background: #f0f0f0; border-radius: 8px; margin: 20px 0; }
+        .map-square { width: 60px; height: 60px; border: 2px solid #ccc; background-color: var(--c-white); margin: 0 5px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-weight: bold; cursor: pointer; transition: all 0.2s ease; border-radius: 6px; position: relative; }
+        .map-square.selected { border-color: var(--c-blue); background-color: #cce5ff; transform: scale(1.05); }
+        .map-square.confirmed { border-color: var(--c-green); background-color: #d4edda; }
+        .map-square.reveal .player-tokens { transform: scale(1.1); }
+        .square-number { font-size: 0.8em; color: #888; margin-top: 4px; }
+        .player-tokens { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; flex-grow: 1; transition: transform 0.3s; }
+        .player-token { width: 20px; height: 20px; border-radius: 50%; color: white; font-size: 0.8em; font-weight: bold; display: flex; justify-content: center; align-items: center; margin: 1px; }
+        .G1-token { background-color: #d9534f; } .G2-token { background-color: #5bc0de; } .G3-token { background-color: #5cb85c; } .G4-token { background-color: #f0ad4e; } .G5-token { background-color: #6f42c1; } .G6-token { background-color: #6610f2; }
+        #confirm-choice-btn { margin: 10px auto; width: 80%; }
+        #objectives-container { background: #e7f3ff; padding: 20px; border-radius: 8px; font-size: 1.1em; border: 2px solid var(--c-blue); box-shadow: 0 4px 8px rgba(0,0,0,0.1); text-align: left; }
+        .objective { margin-bottom: 10px; }
+        .objective strong { color: var(--c-blue); display: block; margin-bottom: 5px; }
+        .chat-tabs { display: flex; border-bottom: 1px solid #ccc; }
+        .chat-tab { padding: 10px 15px; cursor: pointer; background: #eee; border-top-left-radius: 4px; border-top-right-radius: 4px; }
+        .chat-tab.active { background: var(--c-white); border-bottom: 1px solid var(--c-white); margin-bottom: -1px; font-weight: bold; }
+        .chat-window { flex-grow: 1; overflow-y: auto; border: 1px solid #ccc; border-top: none; padding: 10px; }
+        .chat-window p { margin: 0 0 5px 0; padding: 0; font-size: 0.95em; }
+        .chat-input { display: flex; margin-top: 10px; }
+        .chat-input input { flex-grow: 1; border: 1px solid #ccc; padding: 8px; border-radius: 4px 0 0 4px; }
+        .chat-input button { border-radius: 0 4px 4px 0; }
+    </style>
+</head>
+<body>
+
+    <div id="lobby-view">
+        <div class="container">
+            <h1>Horse race?</h1>
+            <h2>Lobby</h2>
+            <div id="join-form">
+                <input type="text" id="username-input" placeholder="Inserisci il tuo nome...">
+                <button id="join-btn">Entra</button>
+            </div>
+            <hr>
+            <h3>Giocatori Connessi:</h3>
+            <ul id="player-list"></ul>
+            <p id="lobby-status">Connessione al server...</p>
+        </div>
+    </div>
+
+    <div id="game-view" class="hidden">
+        </div>
+
+    <div id="game-over-view" class="hidden">
+        </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // =======================================================================
+            // == MODIFICA FONDAMENTALE: INSERISCI QUI L'URL DEL TUO BACKEND RENDER ==
+            // =======================================================================
+            const socket = io("INCOLLA_QUI_L'URL_DEL_TUO_BACKEND");
+            
+            let mySid = '';
+            let playersData = {};
+            let selectedSquare = null;
+
+            const lobbyView = document.getElementById('lobby-view');
+            const gameView = document.getElementById('game-view');
+            const gameOverView = document.getElementById('game-over-view');
+            const confirmChoiceBtn = document.getElementById('confirm-choice-btn');
+
+            function showView(viewName) {
+                [lobbyView, gameView, gameOverView].forEach(v => v.classList.add('hidden'));
+                document.getElementById(`${viewName}-view`).classList.remove('hidden');
+            }
+
+            function setupNewRound(data) { /* ... questa funzione rimane invariata ... */ }
+            function updateLeaderboard(scores) { /* ... questa funzione rimane invariata ... */ }
+            function setupChat(players) { /* ... questa funzione rimane invariata ... */ }
+            
+            // --- GESTIONE SOCKET ---
+            socket.on('connect', () => { mySid = socket.id; });
+            
+            socket.on('welcome', (data) => {
+                const playerList = document.getElementById('player-list');
+                playerList.innerHTML = '';
+                data.all_players.forEach(p_name => {
+                    const li = document.createElement('li');
+                    li.textContent = p_name;
+                    playerList.appendChild(li);
+                });
+                if (data.all_players.length > 0) {
+                    document.getElementById('lobby-status').textContent = `Giocatori connessi: ${data.all_players.length}`;
+                } else {
+                    document.getElementById('lobby-status').textContent = 'In attesa di altri giocatori...';
+                }
+            });
+
+            socket.on('player_joined', (data) => {
+                const playerList = document.getElementById('player-list');
+                const li = document.createElement('li');
+                li.textContent = data.new_player_name;
+                playerList.appendChild(li);
+                const currentCount = document.querySelectorAll('#player-list li').length;
+                document.getElementById('lobby-status').textContent = `Giocatori connessi: ${currentCount}`;
+            });
+
+            socket.on('player_left', (data) => {
+                 const playerList = document.getElementById('player-list');
+                 let count = 0;
+                 playerList.querySelectorAll('li').forEach(li => {
+                     if (li.textContent === data.username) {
+                         li.remove();
+                     } else {
+                         count++;
+                     }
+                 });
+                 document.getElementById('lobby-status').textContent = `Giocatori connessi: ${count}`;
+            });
+
+            socket.on('game_starting', () => { document.getElementById('lobby-status').textContent = 'Partita in avvio...'; });
+            socket.on('error', (data) => { 
+                alert("Errore: " + data.msg); 
+                document.getElementById('join-form').classList.remove('hidden');
+                document.getElementById('lobby-status').textContent = 'Errore. Riprova.';
+            });
+
+            // ... tutti gli altri gestori di eventi ('new_round', 'timer_update', etc.) rimangono invariati ...
+
+            const usernameInput = document.getElementById('username-input');
+            const joinBtn = document.getElementById('join-btn');
+
+            function joinGame() {
+                const username = usernameInput.value;
+                const playerList = document.getElementById('player-list');
+                
+                // Optimistic UI Update
+                const tempLi = document.createElement('li');
+                tempLi.textContent = username || 'Giocatore...';
+                tempLi.style.color = '#555';
+                playerList.appendChild(tempLi);
+                
+                socket.emit('join', { username: username });
+                document.getElementById('join-form').classList.add('hidden');
+                document.getElementById('lobby-status').textContent = 'Connessione in corso...';
+            }
+
+            joinBtn.addEventListener('click', joinGame);
+            usernameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') { joinGame(); }
+            });
+
+            showView('lobby');
+        });
+    </script>
+</body>
+</html>
