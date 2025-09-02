@@ -42,8 +42,10 @@
         .objective { margin-bottom: 10px; }
         .objective strong { color: var(--c-blue); display: block; margin-bottom: 5px; }
         .chat-tabs { display: flex; border-bottom: 1px solid #ccc; }
-        .chat-tab { padding: 10px 15px; cursor: pointer; background: #eee; border-top-left-radius: 4px; border-top-right-radius: 4px; }
+        .chat-tab { position: relative; padding: 10px 15px; cursor: pointer; background: #eee; border-top-left-radius: 4px; border-top-right-radius: 4px; }
         .chat-tab.active { background: var(--c-white); border-bottom: 1px solid var(--c-white); margin-bottom: -1px; font-weight: bold; }
+        .unread-dot { position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; background-color: var(--c-red); border-radius: 50%; display: none; }
+        .chat-tab.has-unread .unread-dot { display: block; }
         .chat-window { flex-grow: 1; overflow-y: auto; border: 1px solid #ccc; border-top: none; padding: 10px; }
         .chat-window p { margin: 0 0 5px 0; padding: 0; font-size: 0.95em; }
         .chat-input { display: flex; margin-top: 10px; }
@@ -52,6 +54,7 @@
     </style>
 </head>
 <body>
+
     <div id="lobby-view">
         <div class="container">
             <h1>Horse race?</h1>
@@ -64,8 +67,36 @@
             <h3>Giocatori Connessi:</h3>
             <ul id="player-list"></ul>
             <p id="lobby-status">Connessione al server...</p>
+
+            <div id="game-rules" class="card" style="margin-top: 20px; text-align: left;">
+                <h3>Regole del Gioco</h3>
+                <p>Benvenuto! L'obiettivo è accumulare più punti degli altri in 5 round, ma non sarà semplice. Ogni tua scelta sarà un dilemma strategico.</p>
+                
+                <h4>Obiettivi del Round</h4>
+                <p>Ogni round riceverai due tipi di obiettivi:</p>
+                <ul>
+                    <li><strong>Obiettivo Comune (Visibile a tutti):</strong> Una condizione uguale per tutti che crea punti di scontro sulla mappa. Vale pochi punti.</li>
+                    <li><strong>Obiettivo Personale (Segreto):</strong> Visibile solo a te. È un obiettivo complesso e vale molti punti. Potrebbe chiederti di raggiungere certe zone, di prevedere le mosse di un avversario, di sabotare i piani altrui o persino di collaborare in modi inaspettati.</li>
+                </ul>
+
+                <h4>Punteggio e Conflitti</h4>
+                <p>Presta attenzione a questa regola fondamentale:</p>
+                <ul>
+                    <li>La regola più importante: se termini un round su una casella insieme a uno o più altri giocatori, **generalmente non ottieni punti né dal tuo obiettivo personale, né da quello comune.**</li>
+                    <li><strong>L'eccezione:</strong> Alcuni Obiettivi Comuni potrebbero **cambiare le regole del round!** Per esempio, un obiettivo potrebbe premiare esplicitamente i giocatori che riescono a formare una coppia su una casella, annullando la penalità.</li>
+                </ul>
+                <p>Questo crea il dilemma centrale del gioco: ti conviene rischiare di andare in una casella affollata per l'obiettivo comune, o giocare sul sicuro per il tuo obiettivo segreto?</p>
+
+                 <h4>Info Generali</h4>
+                <ul>
+                    <li><strong>Giocatori:</strong> Da 4 a 6 giocatori.</li>
+                    <li><strong>Timer di Round:</strong> 3 minuti.</li>
+                    <li><strong>Vincitore:</strong> Chi ha più punti dopo 5 round vince!</li>
+                </ul>
+            </div>
         </div>
     </div>
+
     <div id="game-view" class="hidden">
         <header class="game-header card">
             <div id="timer">--:--</div>
@@ -96,6 +127,7 @@
             </div>
         </aside>
     </div>
+
     <div id="game-over-view" class="hidden">
         <div class="container">
             <h2>Partita Terminata!</h2>
@@ -104,22 +136,27 @@
             <p id="restarting-status">La lobby si riavvierà a breve...</p>
         </div>
     </div>
+
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const socket = io("https://horse-race-irrb.onrender.com");
+            const socket = io("INCOLLA_QUI_L'URL_DEL_TUO_BACKEND");
+            
             let mySid = '';
             let myUsername = '';
             let playersData = {};
             let selectedSquare = null;
+
             const lobbyView = document.getElementById('lobby-view');
             const gameView = document.getElementById('game-view');
             const gameOverView = document.getElementById('game-over-view');
             const confirmChoiceBtn = document.getElementById('confirm-choice-btn');
+
             function showView(viewName) {
                 [lobbyView, gameView, gameOverView].forEach(v => v.classList.add('hidden'));
                 document.getElementById(`${viewName}-view`).classList.remove('hidden');
             }
+            
             function setupNewRound(data) {
                 showView('game');
                 playersData = data.players;
@@ -143,7 +180,6 @@
                     });
                     mapContainer.appendChild(square);
                 }
-                // --- NUOVA LOGICA PER MOSTRARE GLI OBIETTIVI ---
                 document.getElementById('my-personal-objective').textContent = data.obiettivi_personali[mySid].desc;
                 const otherObjectivesList = document.getElementById('other-objectives-list');
                 otherObjectivesList.innerHTML = '';
@@ -157,6 +193,7 @@
                 updateLeaderboard(data.punteggi);
                 setupChat(playersData);
             }
+
             function updateLeaderboard(scores) {
                 const leaderboardList = document.getElementById('leaderboard-list');
                 leaderboardList.innerHTML = '';
@@ -170,11 +207,25 @@
                     leaderboardList.appendChild(li);
                 });
             }
+
             function setupChat(players) {
                 const chatTabs = document.getElementById('chat-tabs');
                 const chatWindows = document.getElementById('chat-windows');
-                chatTabs.innerHTML = '<div class="chat-tab active" data-chat="global">Globale</div>';
-                chatWindows.innerHTML = '<div class="chat-window" id="chat-window-global"></div>';
+                chatTabs.innerHTML = '';
+                chatWindows.innerHTML = '';
+
+                const globalTab = document.createElement('div');
+                globalTab.className = 'chat-tab active';
+                globalTab.dataset.chat = 'global';
+                globalTab.textContent = 'Globale';
+                globalTab.appendChild(document.createElement('span')).className = 'unread-dot';
+                chatTabs.appendChild(globalTab);
+
+                const globalWindow = document.createElement('div');
+                globalWindow.className = 'chat-window';
+                globalWindow.id = 'chat-window-global';
+                chatWindows.appendChild(globalWindow);
+
                 for(const sid in players) {
                     if(sid === mySid) continue;
                     const p = players[sid];
@@ -182,17 +233,23 @@
                     tab.className = 'chat-tab';
                     tab.dataset.chat = sid;
                     tab.textContent = p.username;
+                    tab.appendChild(document.createElement('span')).className = 'unread-dot';
                     chatTabs.appendChild(tab);
                     const windowEl = document.createElement('div');
                     windowEl.className = 'chat-window hidden';
                     windowEl.id = `chat-window-${sid}`;
                     chatWindows.appendChild(windowEl);
                 }
+                
                 chatTabs.addEventListener('click', e => {
-                    if (!e.target.classList.contains('chat-tab')) return;
-                    const targetChat = e.target.dataset.chat;
+                    const tab = e.target.closest('.chat-tab');
+                    if (!tab) return;
+                    
+                    tab.classList.remove('has-unread');
+
+                    const targetChat = tab.dataset.chat;
                     chatTabs.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
-                    e.target.classList.add('active');
+                    tab.classList.add('active');
                     chatWindows.querySelectorAll('.chat-window').forEach(w => w.classList.add('hidden'));
                     document.getElementById(`chat-window-${targetChat}`).classList.remove('hidden');
                 });
@@ -241,6 +298,9 @@
                 document.querySelector('.map-square.selected')?.classList.add('confirmed');
                 confirmChoiceBtn.disabled = true;
                 confirmChoiceBtn.textContent = 'Scelta Inviata';
+                document.querySelectorAll('.map-square').forEach(s => {
+                    s.style.pointerEvents = 'none';
+                });
             });
             socket.on('round_reveal', (data) => {
                 document.querySelectorAll('.map-square').forEach(s => s.style.pointerEvents = 'none');
@@ -278,6 +338,10 @@
                 if (win) {
                     win.innerHTML += `<p><strong>${data.sender}:</strong> ${data.message}</p>`;
                     win.scrollTop = win.scrollHeight;
+                    const chatTab = document.querySelector(`.chat-tab[data-chat="${targetId}"]`);
+                    if (chatTab && !chatTab.classList.contains('active')) {
+                        chatTab.classList.add('has-unread');
+                    }
                 }
             });
             const usernameInput = document.getElementById('username-input');
