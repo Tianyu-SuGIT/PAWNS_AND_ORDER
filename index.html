@@ -5,6 +5,8 @@
     <title>PAWNS</title>
     <style>
         :root { --c-blue: #007bff; --c-green: #28a745; --c-red: #d9534f; --c-yellow: #ffc107; --c-light-gray: #f8f9fa; --c-white: #fff; --c-text: #333; }
+        .G1-token-color { color: #d9534f; } .G2-token-color { color: #5bc0de; } .G3-token-color { color: #5cb85c; }
+        .G4-token-color { color: #f0ad4e; } .G5-token-color { color: #6f42c1; } .G6-token-color { color: #6610f2; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f4f4f9; color: var(--c-text); font-size: 16px; }
         .hidden { display: none !important; }
         .card { background: var(--c-white); padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -12,7 +14,7 @@
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         .btn-secondary { background-color: #6c757d; } .btn-secondary:hover { background-color: #5a6268; }
-        #lobby-view, #game-over-view { text-align: center; padding-top: 50px; }
+        .view { text-align: center; padding-top: 50px; }
         .container { background-color: var(--c-white); margin: auto; padding: 20px 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; }
         #player-list { list-style-type: none; padding: 0; }
         #player-list li { background-color: #e7f3ff; margin: 5px 0; padding: 10px; border-radius: 4px; }
@@ -25,9 +27,9 @@
         .chat-area { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; }
         #timer { font-size: 1.8em; font-weight: bold; color: var(--c-red); }
         #round-info { font-size: 1.2em; }
-        #leaderboard-list { list-style: none; padding: 0; }
-        #leaderboard-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; transition: all 0.3s; }
-        #leaderboard-list li.player-confirmed span:first-child { color: var(--c-green); font-weight: bold; }
+        .leaderboard-list { list-style: none; padding: 0; }
+        .leaderboard-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; transition: all 0.3s; }
+        .leaderboard-list li.player-confirmed span:first-child { color: var(--c-green); font-weight: bold; }
         .player-id-color { padding: 2px 6px; border-radius: 4px; color: white; margin-right: 8px; }
         .map-container { display: flex; justify-content: center; align-items: center; padding: 20px; background: #f0f0f0; border-radius: 8px; margin: 20px 0; }
         .map-square { width: 60px; height: 60px; border: 2px solid #ccc; background: var(--c-white); margin: 0 5px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-weight: bold; cursor: pointer; transition: all 0.2s ease; border-radius: 6px; position: relative; }
@@ -35,16 +37,17 @@
         .square-number { font-size: 0.8em; color: #888; margin-top: 4px; }
         .player-tokens { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; flex-grow: 1; }
         .player-token { width: 20px; height: 20px; border-radius: 50%; color: white; font-size: 0.8em; display: flex; justify-content: center; align-items: center; margin: 1px; }
-        .G1-token { background-color: #d9534f; } .G1-bg { background: #d9534f; }
-        .G2-token { background-color: #5bc0de; } .G2-bg { background: #5bc0de; }
-        .G3-token { background-color: #5cb85c; } .G3-bg { background: #5cb85c; }
-        .G4-token { background-color: #f0ad4e; } .G4-bg { background: #f0ad4e; }
-        .G5-token { background-color: #6f42c1; } .G5-bg { background: #6f42c1; }
-        .G6-token { background-color: #6610f2; } .G6-bg { background: #6610f2; }
+        .G1-token, .G1-bg { background-color: #d9534f; }
+        .G2-token, .G2-bg { background-color: #5bc0de; }
+        .G3-token, .G3-bg { background-color: #5cb85c; }
+        .G4-token, .G4-bg { background-color: #f0ad4e; }
+        .G5-token, .G5-bg { background-color: #6f42c1; }
+        .G6-token, .G6-bg { background-color: #6610f2; }
         .actions-container { display: flex; justify-content: center; gap: 10px; margin: 10px auto; height: 40px;}
         #objectives-container { background: #e7f3ff; padding: 20px; border-radius: 8px; font-size: 1.1em; border: 2px solid var(--c-blue); text-align: left; }
         .objective { margin-bottom: 10px; }
         .objective strong { color: var(--c-blue); display: block; margin-bottom: 5px; }
+        #inter-round-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(244, 244, 249, 0.95); display: flex; justify-content: center; align-items: center; z-index: 100; }
         .chat-tabs { display: flex; border-bottom: 1px solid #ccc; }
         .chat-tab { position: relative; padding: 10px 15px; cursor: pointer; background: #eee; border-top-left-radius: 4px; border-top-right-radius: 4px; }
         .chat-tab.active { background: var(--c-white); border-bottom: 1px solid var(--c-white); margin-bottom: -1px; font-weight: bold; }
@@ -58,7 +61,7 @@
     </style>
 </head>
 <body>
-    <div id="lobby-view">
+    <div id="lobby-view" class="view">
         <div class="container">
             <h1>PAWNS</h1>
             <h2>Lobby</h2>
@@ -69,11 +72,11 @@
             <p id="lobby-status">Connessione al server...</p>
             <div id="game-rules" class="card" style="margin-top: 20px; text-align: left;">
                 <h3>Regole del Gioco</h3>
-                <p>Benvenuto a PAWNS! L'obiettivo è accumulare più punti degli altri in 5 round, ma non sarà semplice. Ogni tua scelta sarà un dilemma strategico.</p>
+                <p>Benvenuto a PAWNS! L'obiettivo è accumulare più punti degli altri in 5 round. Ogni tua scelta sarà un dilemma strategico.</p>
                 <h4>Obiettivi del Round</h4>
                 <ul>
                     <li><strong>Obiettivo Comune:</strong> Una condizione visibile a tutti che crea punti di scontro sulla mappa.</li>
-                    <li><strong>Obiettivo Personale:</strong> Un obiettivo segreto, fisso per tutta la partita. Potrai cambiarlo una sola volta. Potrebbe chiederti di prevedere le mosse di un avversario, di sabotare i piani altrui o di collaborare in modi inaspettati.</li>
+                    <li><strong>Obiettivo Personale:</strong> Un obiettivo segreto, fisso per tutta la partita. Potrai cambiarlo una sola volta. Potrebbe chiederti di prevedere le mosse di un avversario, di sabotare i piani altrui o di collaborare.</li>
                 </ul>
                 <h4>Punteggio e Conflitti</h4>
                 <ul>
@@ -87,9 +90,9 @@
         </div>
     </div>
 
-    <div id="game-view" class="hidden">
+    <div id="game-view" class="view hidden">
         <header class="game-header card"> <div id="timer">--:--</div> <div id="round-info"></div> </header>
-        <aside class="leaderboard card"> <h3>Classifica</h3> <ul id="leaderboard-list"></ul> </aside>
+        <aside class="leaderboard card"> <h3>Classifica</h3> <ul id="leaderboard-list" class="leaderboard-list"></ul> </aside>
         <main class="main-game">
             <div class="map-container"></div>
             <div class="actions-container">
@@ -110,23 +113,31 @@
         </aside>
     </div>
 
-    <div id="game-over-view" class="hidden">
-        <div class="container">
+    <div id="inter-round-view" class="view hidden">
+        <div class="container card">
+            <h2 id="inter-round-title">Fine Round</h2>
+            <h3>Classifica Attuale</h3>
+            <ul id="inter-round-leaderboard" class="leaderboard-list"></ul>
+            <p style="margin-top:20px; font-weight:bold;">Il prossimo round inizierà a breve...</p>
+        </div>
+    </div>
+
+    <div id="game-over-view" class="view hidden">
+        <div class="container card">
             <h2>Partita Terminata!</h2>
             <h3>Classifica Finale</h3>
-            <ol id="final-leaderboard"></ol>
+            <ul id="final-leaderboard" class="leaderboard-list"></ul>
             <p id="restarting-status">La lobby si riavvierà a breve...</p>
         </div>
     </div>
+
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const socket = io("https://horse-race-irrb.onrender.com");
+            const socket = io("INCOLLA_QUI_L'URL_DEL_TUO_BACKEND");
             let mySid = '', myUsername = '', myPlayerId = '', playersData = {}, confirmedPlayers = new Set(), selectedSquare = null;
             const ui = {
-                lobbyView: document.getElementById('lobby-view'),
-                gameView: document.getElementById('game-view'),
-                gameOverView: document.getElementById('game-over-view'),
+                views: document.querySelectorAll('.view'),
                 confirmBtn: document.getElementById('confirm-choice-btn'),
                 cancelBtn: document.getElementById('cancel-choice-btn'),
                 rerollBtn: document.getElementById('reroll-btn'),
@@ -136,11 +147,26 @@
                 joinBtn: document.getElementById('join-btn')
             };
 
-            function showView(viewName) { [ui.lobbyView, ui.gameView, ui.gameOverView].forEach(v => v.classList.add('hidden')); document.getElementById(`${viewName}-view`).classList.remove('hidden'); }
+            function showView(viewId) { ui.views.forEach(v => v.classList.add('hidden')); document.getElementById(viewId).classList.remove('hidden'); }
             function getPlayerColorClass(playerId) { return `${playerId}-bg`; }
 
+            function populateLeaderboard(listId, scores, currentPlayers) {
+                const leaderboardList = document.getElementById(listId);
+                if (!leaderboardList) return;
+                leaderboardList.innerHTML = '';
+                const sortedPlayers = Object.entries(currentPlayers).sort(([, a], [, b]) => (scores[b.id] || 0) - (scores[a.id] || 0));
+                sortedPlayers.forEach(([sid, player]) => {
+                    const score = scores[player.id] || 0;
+                    const li = document.createElement('li');
+                    li.dataset.sid = sid;
+                    li.innerHTML = `<span><span class="player-id-color ${player.id}-token">${player.id}</span>${player.username}</span><strong>${score}</strong>`;
+                    if (confirmedPlayers.has(sid)) li.classList.add('player-confirmed');
+                    leaderboardList.appendChild(li);
+                });
+            }
+
             function setupNewRound(data) {
-                showView('game');
+                showView('game-view');
                 playersData = data.players;
                 myPlayerId = playersData[mySid]?.id;
                 selectedSquare = null;
@@ -166,7 +192,7 @@
                     const square = document.createElement('div');
                     square.className = 'map-square';
                     square.dataset.square = i;
-                    square.innerHTML = `<span class="square-number">${i}</span><div class="player-tokens"></div>`;
+                    square.innerHTML = `<span class="square-number">${i}</span>`;
                     square.addEventListener('click', (e) => {
                         document.querySelectorAll('.map-square.selected').forEach(s => s.classList.remove('selected'));
                         e.currentTarget.classList.add('selected');
@@ -179,27 +205,9 @@
                 }
                 
                 document.getElementById('my-personal-objective').textContent = data.obiettivi_personali[mySid].desc;
-                updateLeaderboard(data.punteggi, data.players);
-                setupChat(playersData);
-            }
-
-            function updateLeaderboard(scores, currentPlayers) {
-                const leaderboardList = document.getElementById('leaderboard-list');
-                leaderboardList.innerHTML = '';
-                const sortedPlayers = Object.entries(currentPlayers).sort(([, a], [, b]) => (scores[b.id] || 0) - (scores[a.id] || 0));
-                sortedPlayers.forEach(([sid, player]) => {
-                    const score = scores[player.id] || 0;
-                    const li = document.createElement('li');
-                    li.dataset.sid = sid;
-                    li.id = `score-${player.id}`;
-                    li.innerHTML = `<span><span class="player-id-color ${player.id}-token">${player.id}</span>${player.username}</span><strong>${score}</strong>`;
-                    if (confirmedPlayers.has(sid)) li.classList.add('player-confirmed');
-                    leaderboardList.appendChild(li);
-                });
+                populateLeaderboard('leaderboard-list', data.punteggi, data.players);
             }
             
-            function setupChat(players) { /* ... (invariato) ... */ }
-
             // --- GESTIONE SOCKET ---
             socket.on('connect', () => { mySid = socket.id; });
             socket.on('new_round', setupNewRound);
@@ -213,7 +221,6 @@
                 }
                 ui.confirmBtn.classList.add('hidden');
                 ui.cancelBtn.classList.remove('hidden');
-                ui.cancelBtn.disabled = false; // Assicura che sia abilitato
             });
             
             socket.on('new_personal_objective', (data) => {
@@ -228,7 +235,7 @@
                 if (playerLi) playerLi.classList.add('player-confirmed');
                 
                 const totalPlayers = Object.keys(playersData).length;
-                if (confirmedPlayers.size >= totalPlayers - 1 && !confirmedPlayers.has(mySid)) {
+                if (confirmedPlayers.size === totalPlayers - 1 && !confirmedPlayers.has(mySid)) {
                     ui.cancelBtn.disabled = true;
                 }
             });
@@ -249,33 +256,30 @@
                 ui.cancelBtn.classList.add('hidden');
                 ui.confirmBtn.classList.remove('hidden');
             });
-            
-            socket.on('round_reveal', (data) => {
-                const squareToPlayers = {};
-                Object.entries(data.choices).forEach(([playerId, squareNum]) => {
-                    if (squareNum > 0) {
-                        if (!squareToPlayers[squareNum]) squareToPlayers[squareNum] = [];
-                        squareToPlayers[squareNum].push(playerId);
-                    }
-                });
 
+            socket.on('all_choices_confirmed', (squareToPlayers) => {
                 document.querySelectorAll('.map-square').forEach(squareEl => {
-                    squareEl.style.pointerEvents = 'none';
                     const squareNum = squareEl.dataset.square;
                     const playersOnSquare = squareToPlayers[squareNum];
-                    if (playersOnSquare) {
-                        if (playersOnSquare.length === 1) {
-                            squareEl.className = `map-square ${getPlayerColorClass(playersOnSquare[0])}`;
-                        } else {
-                            const colors = playersOnSquare.map(pid => `var(--c-text, black)`); // Placeholder for actual color variables if needed
-                            const colorClasses = playersOnSquare.map(pid => getPlayerColorClass(pid));
-                            // This is a simplified split, more complex logic can be added
-                             const gradient = colorClasses.map((c, i) => `var(--${c.replace('-bg','-token')}) ${i * (100/colorClasses.length)}%, var(--${c.replace('-bg','-token')}) ${(i+1) * (100/colorClasses.length)}%`).join(', ');
-                             squareEl.style.background = `linear-gradient(135deg, ${gradient})`;
-                        }
+                    if (playersOnSquare && playersOnSquare.length > 1) {
+                         const colorClasses = playersOnSquare.map(pid => getPlayerColorClass(pid));
+                         const gradient = colorClasses.map((c, i) => `var(--${c.replace('-bg','-token-color')}) ${i * (100/colorClasses.length)}%, var(--${c.replace('-bg','-token-color')}) ${(i+1) * (100/colorClasses.length)}%`).join(', ');
+                         squareEl.style.background = `linear-gradient(135deg, ${gradient})`;
                     }
                 });
-                setTimeout(() => { updateLeaderboard(data.punteggi, playersData); }, 1000);
+            });
+            
+            socket.on('round_reveal', (data) => {
+                setTimeout(() => {
+                    showView('inter-round-view');
+                    document.getElementById('inter-round-title').textContent = `Fine Round ${data.round_attuale}`;
+                    populateLeaderboard('inter-round-leaderboard', data.punteggi, playersData);
+                }, 2000); // Mostra i risultati finali per 2 secondi prima della schermata punteggi
+            });
+
+            socket.on('game_over', (data) => {
+                showView('game-over-view');
+                populateLeaderboard('final-leaderboard', data.punteggi, data.players);
             });
 
             socket.on('welcome', (data) => { /* ... (invariato) ... */ });
@@ -283,11 +287,7 @@
             socket.on('player_left', (data) => { /* ... (invariato) ... */ });
             socket.on('game_starting', () => { document.getElementById('lobby-status').textContent = 'Partita in avvio...'; });
             socket.on('error', (data) => { /* ... (invariato) ... */ });
-            socket.on('timer_update', (data) => {
-                const timerEl = document.getElementById('timer');
-                if (timerEl) timerEl.textContent = new Date(data.time * 1000).toISOString().substr(14, 5);
-            });
-            socket.on('game_over', (data) => { /* ... (invariato) ... */ });
+            socket.on('timer_update', (data) => { document.getElementById('timer').textContent = new Date(data.time * 1000).toISOString().substr(14, 5); });
             socket.on('lobby_reset', () => { location.reload(); });
             socket.on('new_message', (data) => { /* ... (invariato) ... */ });
 
@@ -314,7 +314,7 @@
             ui.sendChatBtn.addEventListener('click', sendChatMessage);
             ui.chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); } });
             
-            showView('lobby');
+            showView('lobby-view');
         });
     </script>
 </body>
