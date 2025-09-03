@@ -297,7 +297,7 @@
             ui.usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') joinGame(); });
             
             function sendChatMessage() {
-                const message = ui.chatInput.value.trim();
+                                const message = ui.chatInput.value.trim();
                 const activeTab = document.querySelector('.chat-tab.active');
                 if (message && activeTab) {
                     socket.emit('send_message', { message: message, to: activeTab.dataset.chat });
@@ -351,4 +351,3 @@
     </script>
 </body>
 </html>
-}
