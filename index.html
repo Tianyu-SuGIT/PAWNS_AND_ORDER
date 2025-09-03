@@ -134,7 +134,7 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const socket = io("INCOLLA_QUI_L'URL_DEL_TUO_BACKEND");
+            const socket = io("https://horse-race-irrb.onrender.com");
             let mySid = '', myUsername = '', myPlayerId = '', playersData = {}, confirmedPlayers = new Set(), selectedSquare = null;
             const ui = {
                 views: document.querySelectorAll('.view'),
