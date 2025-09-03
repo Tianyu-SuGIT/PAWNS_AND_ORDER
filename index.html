@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <title>PAWNS</title>
     <style>
-        :root { --c-blue: #007bff; --c-green: #28a745; --c-red: #d9534f; --c-yellow: #ffc107; --c-light-gray: #f8f9fa; --c-white: #fff; --c-text: #333; }
-        .G1-token-color { color: #d9534f; } .G2-token-color { color: #5bc0de; } .G3-token-color { color: #5cb85c; }
-        .G4-token-color { color: #f0ad4e; } .G5-token-color { color: #6f42c1; } .G6-token-color { color: #6610f2; }
+        :root { 
+            --c-blue: #007bff; --c-green: #28a745; --c-red: #d9534f; --c-yellow: #ffc107; 
+            --c-light-gray: #f8f9fa; --c-white: #fff; --c-text: #333;
+            --c-G1-token: #d9534f; --c-G2-token: #5bc0de; --c-G3-token: #5cb85c;
+            --c-G4-token: #f0ad4e; --c-G5-token: #6f42c1; --c-G6-token: #6610f2;
+        }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f4f4f9; color: var(--c-text); font-size: 16px; }
         .hidden { display: none !important; }
         .card { background: var(--c-white); padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -35,14 +38,12 @@
         .map-square { width: 60px; height: 60px; border: 2px solid #ccc; background: var(--c-white); margin: 0 5px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-weight: bold; cursor: pointer; transition: all 0.2s ease; border-radius: 6px; position: relative; }
         .map-square.selected { border-color: var(--c-blue); transform: scale(1.05); }
         .square-number { font-size: 0.8em; color: #888; margin-top: 4px; }
-        .player-tokens { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; flex-grow: 1; }
-        .player-token { width: 20px; height: 20px; border-radius: 50%; color: white; font-size: 0.8em; display: flex; justify-content: center; align-items: center; margin: 1px; }
-        .G1-token, .G1-bg { background-color: #d9534f; }
-        .G2-token, .G2-bg { background-color: #5bc0de; }
-        .G3-token, .G3-bg { background-color: #5cb85c; }
-        .G4-token, .G4-bg { background-color: #f0ad4e; }
-        .G5-token, .G5-bg { background-color: #6f42c1; }
-        .G6-token, .G6-bg { background-color: #6610f2; }
+        .G1-token, .G1-bg { background-color: var(--c-G1-token); }
+        .G2-token, .G2-bg { background-color: var(--c-G2-token); }
+        .G3-token, .G3-bg { background-color: var(--c-G3-token); }
+        .G4-token, .G4-bg { background-color: var(--c-G4-token); }
+        .G5-token, .G5-bg { background-color: var(--c-G5-token); }
+        .G6-token, .G6-bg { background-color: var(--c-G6-token); }
         .actions-container { display: flex; justify-content: center; gap: 10px; margin: 10px auto; height: 40px;}
         #objectives-container { background: #e7f3ff; padding: 20px; border-radius: 8px; font-size: 1.1em; border: 2px solid var(--c-blue); text-align: left; }
         .objective { margin-bottom: 10px; }
@@ -135,7 +136,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const socket = io("https://horse-race-irrb.onrender.com");
-            let mySid = '', myUsername = '', myPlayerId = '', playersData = {}, confirmedPlayers = new Set(), selectedSquare = null;
+            let mySid = '', myPlayerId = '', playersData = {}, confirmedPlayers = new Set(), selectedSquare = null;
             const ui = {
                 views: document.querySelectorAll('.view'),
                 confirmBtn: document.getElementById('confirm-choice-btn'),
@@ -208,7 +209,6 @@
                 populateLeaderboard('leaderboard-list', data.punteggi, data.players);
             }
             
-            // --- GESTIONE SOCKET ---
             socket.on('connect', () => { mySid = socket.id; });
             socket.on('new_round', setupNewRound);
             
@@ -221,6 +221,7 @@
                 }
                 ui.confirmBtn.classList.add('hidden');
                 ui.cancelBtn.classList.remove('hidden');
+                ui.cancelBtn.disabled = false;
             });
             
             socket.on('new_personal_objective', (data) => {
@@ -235,7 +236,7 @@
                 if (playerLi) playerLi.classList.add('player-confirmed');
                 
                 const totalPlayers = Object.keys(playersData).length;
-                if (confirmedPlayers.size === totalPlayers - 1 && !confirmedPlayers.has(mySid)) {
+                if (confirmedPlayers.size >= totalPlayers - 1 && !confirmedPlayers.has(mySid)) {
                     ui.cancelBtn.disabled = true;
                 }
             });
@@ -263,8 +264,10 @@
                     const playersOnSquare = squareToPlayers[squareNum];
                     if (playersOnSquare && playersOnSquare.length > 1) {
                          const colorClasses = playersOnSquare.map(pid => getPlayerColorClass(pid));
-                         const gradient = colorClasses.map((c, i) => `var(--${c.replace('-bg','-token-color')}) ${i * (100/colorClasses.length)}%, var(--${c.replace('-bg','-token-color')}) ${(i+1) * (100/colorClasses.length)}%`).join(', ');
-                         squareEl.style.background = `linear-gradient(135deg, ${gradient})`;
+                         const colors = colorClasses.map(c => `var(--c-${c.replace('-bg', '-token')})`);
+                         const step = 100 / colors.length;
+                         const gradientStops = colors.map((c, i) => `${c} ${i * step}%, ${c} ${(i + 1) * step}%`).join(', ');
+                         squareEl.style.background = `linear-gradient(135deg, ${gradientStops})`;
                     }
                 });
             });
@@ -274,35 +277,25 @@
                     showView('inter-round-view');
                     document.getElementById('inter-round-title').textContent = `Fine Round ${data.round_attuale}`;
                     populateLeaderboard('inter-round-leaderboard', data.punteggi, playersData);
-                }, 2000); // Mostra i risultati finali per 2 secondi prima della schermata punteggi
+                }, 3000);
             });
 
             socket.on('game_over', (data) => {
                 showView('game-over-view');
                 populateLeaderboard('final-leaderboard', data.punteggi, data.players);
             });
-
-            socket.on('welcome', (data) => { /* ... (invariato) ... */ });
-            socket.on('player_joined', (data) => { /* ... (invariato) ... */ });
-            socket.on('player_left', (data) => { /* ... (invariato) ... */ });
-            socket.on('game_starting', () => { document.getElementById('lobby-status').textContent = 'Partita in avvio...'; });
-            socket.on('error', (data) => { /* ... (invariato) ... */ });
-            socket.on('timer_update', (data) => { document.getElementById('timer').textContent = new Date(data.time * 1000).toISOString().substr(14, 5); });
-            socket.on('lobby_reset', () => { location.reload(); });
-            socket.on('new_message', (data) => { /* ... (invariato) ... */ });
-
-            // --- LISTENER PER I PULSANTI E AZIONI ---
-            ui.confirmBtn.addEventListener('click', () => { if (selectedSquare !== null) socket.emit('make_choice', { choice: selectedSquare }); });
-            ui.cancelBtn.addEventListener('click', () => socket.emit('cancel_choice'));
-            ui.rerollBtn.addEventListener('click', () => { if(confirm('Sei sicuro di voler usare il tuo unico reroll?')) socket.emit('reroll_objective'); });
+            
+            const joinBtn = document.getElementById('join-btn');
+            const usernameInput = document.getElementById('username-input');
             function joinGame() {
-                myUsername = ui.usernameInput.value.trim() || `Giocatore${Math.floor(Math.random() * 100)}`;
+                const username = ui.usernameInput.value.trim() || `Giocatore${Math.floor(Math.random() * 100)}`;
                 document.getElementById('join-form').classList.add('hidden');
                 document.getElementById('lobby-status').textContent = 'Connessione in corso...';
-                socket.emit('join', { username: myUsername });
+                socket.emit('join', { username: username });
             }
             ui.joinBtn.addEventListener('click', joinGame);
             ui.usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') joinGame(); });
+            
             function sendChatMessage() {
                 const message = ui.chatInput.value.trim();
                 const activeTab = document.querySelector('.chat-tab.active');
@@ -314,8 +307,48 @@
             ui.sendChatBtn.addEventListener('click', sendChatMessage);
             ui.chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); } });
             
+            ui.confirmBtn.addEventListener('click', () => { if (selectedSquare !== null) socket.emit('make_choice', { choice: selectedSquare }); });
+            ui.cancelBtn.addEventListener('click', () => socket.emit('cancel_choice'));
+            ui.rerollBtn.addEventListener('click', () => { if(confirm('Sei sicuro di voler usare il tuo unico reroll?')) socket.emit('reroll_objective'); });
+            
+            // --- Altri handler (invariati) ---
+            socket.on('welcome', (data) => {
+                const playerList = document.getElementById('player-list');
+                playerList.innerHTML = '';
+                data.all_players.forEach(p_name => { const li = document.createElement('li'); li.textContent = p_name; playerList.appendChild(li); });
+                document.getElementById('lobby-status').textContent = `Giocatori connessi: ${data.all_players.length}`;
+            });
+            socket.on('player_joined', (data) => {
+                const playerList = document.getElementById('player-list');
+                const li = document.createElement('li'); li.textContent = data.new_player_name; playerList.appendChild(li);
+                document.getElementById('lobby-status').textContent = `Giocatori connessi: ${document.querySelectorAll('#player-list li').length}`;
+            });
+            socket.on('player_left', (data) => {
+                 document.querySelectorAll('#player-list li').forEach(li => { if (li.textContent === data.username) li.remove(); });
+                 document.getElementById('lobby-status').textContent = `Giocatori connessi: ${document.querySelectorAll('#player-list li').length}`;
+            });
+            socket.on('game_starting', () => { document.getElementById('lobby-status').textContent = 'Partita in avvio...'; });
+            socket.on('error', (data) => {
+                alert("Errore: " + data.msg);
+                document.getElementById('join-form').classList.remove('hidden');
+                document.getElementById('lobby-status').textContent = 'Errore. Riprova.';
+            });
+            socket.on('timer_update', (data) => { document.getElementById('timer').textContent = new Date(data.time * 1000).toISOString().substr(14, 5); });
+            socket.on('lobby_reset', () => { location.reload(); });
+            socket.on('new_message', (data) => {
+                const targetId = data.to === 'global' ? 'global' : (data.sender_sid === mySid ? data.to : data.sender_sid);
+                const win = document.getElementById(`chat-window-${targetId}`);
+                if (win) {
+                    win.innerHTML += `<p><strong>${data.sender}:</strong> ${data.message}</p>`;
+                    win.scrollTop = win.scrollHeight;
+                    const chatTab = document.querySelector(`.chat-tab[data-chat="${targetId}"]`);
+                    if (chatTab && !chatTab.classList.contains('active')) chatTab.classList.add('has-unread');
+                }
+            });
+
             showView('lobby-view');
         });
     </script>
 </body>
 </html>
+}
